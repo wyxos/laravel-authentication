@@ -1,0 +1,26 @@
+{
+  "name": "wyxos/laravel-authentication",
+  "description": "Switchable authentication history and new-device notifications for Laravel applications.",
+  "type": "library",
+  "license": "MIT",
+  "version": "0.1.0",
+  "require": {
+    "php": "^8.2",
+    "illuminate/auth": "^12.0|^13.0",
+    "illuminate/database": "^12.0|^13.0",
+    "illuminate/notifications": "^12.0|^13.0",
+    "rappasoft/laravel-authentication-log": "^6.1"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0|^11.0",
+    "phpunit/phpunit": "^11.0|^12.0",
+    "laravel/pint": "^1.0"
+  },
+  "autoload": {"psr-4": {"Wyxos\\LaravelAuthentication\\": "src/"}},
+  "autoload-dev": {"psr-4": {"Wyxos\\LaravelAuthentication\\Tests\\": "tests/"}},
+  "extra": {"laravel": {"providers": ["Wyxos\\LaravelAuthentication\\AuthenticationServiceProvider"]}},
+  "scripts": {"test": "phpunit", "lint": "pint --test", "source:check": "@php tools/check-source.php"},
+  "config": {"sort-packages": true, "allow-plugins": {"php-http/discovery": true}},
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
