@@ -28,7 +28,7 @@ return new class extends Migration
         });
         Schema::create('wyxos_authentication_log', function (Blueprint $table) {
             $table->id();
-            $table->morphs('authenticatable');
+            $table->morphs('authenticatable', 'wyxos_auth_log_actor_index');
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->char('device_id', 64)->nullable();

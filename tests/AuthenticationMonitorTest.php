@@ -60,6 +60,15 @@ class AuthenticationMonitorTest extends TestCase
         return app(AuthenticationMonitor::class);
     }
 
+    public function test_migration_index_names_fit_mysql_identifier_limits(): void
+    {
+        foreach (['wyxos_authentication_identities', 'wyxos_authentication_devices', 'wyxos_authentication_log'] as $table) {
+            foreach (Schema::getIndexes($table) as $index) {
+                $this->assertLessThanOrEqual(64, strlen($index['name']), $index['name']);
+            }
+        }
+    }
+
     public function test_first_login_notifies_and_browser_version_updates_do_not(): void
     {
         $first = $this->monitor()->record($this->request(), $this->actor());
