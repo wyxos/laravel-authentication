@@ -1,7 +1,7 @@
 <?php
 
-use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
 use Wyxos\LaravelAuthentication\Notifications\CompletedLogin;
+use Wyxos\LaravelAuthentication\Notifications\NewDevice;
 
 return [
     'enabled' => env('LA_ENABLED', env('WYXOS_AUTH_ENABLED', true)),

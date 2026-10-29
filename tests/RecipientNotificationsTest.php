@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase;
 use Rappasoft\LaravelAuthenticationLog\LaravelAuthenticationLogServiceProvider;
-use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
 use RuntimeException;
 use Wyxos\LaravelAuthentication\AuthenticationMonitor;
 use Wyxos\LaravelAuthentication\AuthenticationServiceProvider;
@@ -21,6 +20,7 @@ use Wyxos\LaravelAuthentication\Models\AuthenticationDevice;
 use Wyxos\LaravelAuthentication\Models\AuthenticationEntry;
 use Wyxos\LaravelAuthentication\Models\AuthenticationIdentity;
 use Wyxos\LaravelAuthentication\Notifications\CompletedLogin;
+use Wyxos\LaravelAuthentication\Notifications\NewDevice;
 use Wyxos\LaravelAuthentication\Tests\Fixtures\MultiChannelCompletedLogin;
 use Wyxos\LaravelAuthentication\Tests\Fixtures\User;
 

@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase;
 use Rappasoft\LaravelAuthenticationLog\LaravelAuthenticationLogServiceProvider;
-use Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice;
 use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Wyxos\LaravelAuthentication\AuthenticationMonitor;
@@ -21,6 +20,7 @@ use Wyxos\LaravelAuthentication\AuthenticationServiceProvider;
 use Wyxos\LaravelAuthentication\Models\AuthenticationDevice;
 use Wyxos\LaravelAuthentication\Models\AuthenticationEntry;
 use Wyxos\LaravelAuthentication\Models\AuthenticationIdentity;
+use Wyxos\LaravelAuthentication\Notifications\NewDevice;
 use Wyxos\LaravelAuthentication\Tests\Fixtures\User;
 
 class AuthenticationMonitorTest extends TestCase
@@ -98,7 +98,7 @@ class AuthenticationMonitorTest extends TestCase
         $this->assertSame(['id', 'email', 'name', 'created_at', 'updated_at'], Schema::getColumnListing('package_test_users'));
     }
 
-    public function test_new_browser_notifies_again_and_sender_is_upstream_notification(): void
+    public function test_new_browser_notifies_again_using_the_safe_upstream_compatible_notification(): void
     {
         $this->monitor()->record($this->request(), $this->actor());
         $this->monitor()->record($this->request('Firefox/144.0'), $this->actor());

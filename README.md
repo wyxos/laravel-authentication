@@ -128,7 +128,11 @@ Summary statuses are `disabled`, `no_recipients`, `resolver_failed` and `complet
 
 ## New-device alerts
 
-The signing-in account's first new fingerprint sends Rappasoft's `NewDevice` notification. Familiar devices remain in history without another new-device email. The `notification` config key overrides this class; it receives a Rappasoft `AuthenticationLog` instance. It is independent of `login_notification`, the selected-recipient template.
+The signing-in account's first new fingerprint sends `Wyxos\LaravelAuthentication\Notifications\NewDevice`, a mail-safe subclass of Rappasoft's notification. Familiar devices remain in history without another new-device email. The `notification` config key overrides this class; it receives a Rappasoft `AuthenticationLog` instance. It is independent of `login_notification`, the selected-recipient template.
+
+The default new-device and selected-recipient emails use literal HTML and plain-text views. Account text and request-derived values cannot inject Markdown links, images or formatting. Custom application notification classes remain app-owned and should escape all untrusted values. New-device subject, introduction, labels and footer retain the upstream translation keys.
+
+If an earlier published config explicitly selects `Rappasoft\LaravelAuthenticationLog\Notifications\NewDevice`, update that entry to the package's new default class. The installer preserves existing config and never overwrites custom application notification classes automatically.
 
 The fingerprint includes normalized user-agent information, IP address, accepted language and encoding. Browser version changes are ignored. A network or language change can count as a new device; it is not proof of physical device identity. The package trusts Laravel's request IP handling. Configure trusted proxies in the host; arbitrary forwarded-IP headers must not be trusted. No geolocation lookup or webhook is enabled.
 

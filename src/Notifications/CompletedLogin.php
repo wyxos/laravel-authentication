@@ -19,11 +19,18 @@ class CompletedLogin extends Notification
     {
         return (new MailMessage)
             ->subject('A user signed in to '.config('app.name'))
-            ->line('A user completed a sign-in to '.config('app.name').'.')
-            ->line('Account: '.($this->context->actor->email ?? $this->context->actor->name ?? $this->context->actor->id))
-            ->line('Guard: '.$this->context->guard)
-            ->line('Time: '.$this->context->occurredAt->utc()->format('j F Y \\a\\t H:i \\U\\T\\C'))
-            ->line('IP address: '.($this->context->ipAddress ?? 'Unavailable'))
-            ->line('Browser / device: '.$this->context->device);
+            ->view(['html' => 'wyxos-authentication::security-email', 'text' => 'wyxos-authentication::security-email-text'], [
+                'appName' => config('app.name'),
+                'heading' => 'A user signed in',
+                'introduction' => 'A user completed a sign-in to '.config('app.name').'.',
+                'details' => [
+                    'Account' => $this->context->actor->email ?? $this->context->actor->name ?? $this->context->actor->id,
+                    'Guard' => $this->context->guard,
+                    'Time' => $this->context->occurredAt->utc()->format('j F Y \\a\\t H:i \\U\\T\\C'),
+                    'IP address' => $this->context->ipAddress ?? 'Unavailable',
+                    'Browser / device' => $this->context->device,
+                ],
+                'footer' => 'You received this security notification as an eligible login-alert recipient.',
+            ]);
     }
 }
