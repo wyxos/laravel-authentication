@@ -53,9 +53,11 @@ jobs:
         env:
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
-          curl --fail-with-body --silent --show-error \
-            --header "Authorization: Bearer wyxos:$PACKAGIST_API_TOKEN" \
+          curl --config - --fail-with-body --silent --show-error \
+
             --header 'Content-Type: application/json' \
             --user-agent 'Wyxos-package-release (mailto=wyxos@wyxos.com)' \
             --data '{"repository":"https://github.com/wyxos/laravel-authentication"}' \
-            https://packagist.org/api/update-package
+            https://packagist.org/api/update-package <<EOF
+          header = "Authorization: Bearer wyxos:$PACKAGIST_API_TOKEN"
+          EOF
