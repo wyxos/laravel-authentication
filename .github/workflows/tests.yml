@@ -54,7 +54,6 @@ jobs:
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
         run: |
           curl --config - --fail-with-body --silent --show-error \
-
             --header 'Content-Type: application/json' \
             --user-agent 'Wyxos-package-release (mailto=wyxos@wyxos.com)' \
             --data '{"repository":"https://github.com/wyxos/laravel-authentication"}' \
