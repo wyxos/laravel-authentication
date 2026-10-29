@@ -3,6 +3,7 @@
 namespace Wyxos\LaravelAuthentication;
 
 use Illuminate\Support\ServiceProvider;
+use Wyxos\LaravelAuthentication\Commands\InstallAuthentication;
 use Wyxos\LaravelAuthentication\Commands\PruneAuthentication;
 
 class AuthenticationServiceProvider extends ServiceProvider
@@ -18,7 +19,7 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         if ($this->app->runningInConsole()) {
             $this->publishes([__DIR__.'/../config/wyxos-authentication.php' => config_path('wyxos-authentication.php')], 'wyxos-authentication-config');
-            $this->commands([PruneAuthentication::class]);
+            $this->commands([PruneAuthentication::class, InstallAuthentication::class]);
         }
     }
 }

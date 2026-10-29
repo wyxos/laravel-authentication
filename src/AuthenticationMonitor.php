@@ -4,6 +4,7 @@ namespace Wyxos\LaravelAuthentication;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -21,54 +22,60 @@ class AuthenticationMonitor
     {
         $features = config('wyxos-authentication.features', []);
 
-        return array_map(fn (string $key): bool => (bool) ($features[$key] ?? false), array_combine(
-            ['record_logins', 'self_history', 'admin_history', 'login_notifications'],
-            ['record_logins', 'self_history', 'admin_history', 'login_notifications'],
+        return array_map(fn (string $key): bool => (bool) config('wyxos-authentication.enabled', true) && (bool) ($features[$key] ?? false), array_combine(
+            ['record_logins', 'self_history', 'admin_history', 'new_device_notifications', 'login_notifications'],
+            ['record_logins', 'self_history', 'admin_history', 'new_device_notifications', 'login_notifications'],
         ));
     }
 
     public function record(Request $request, Authenticatable $actor, string $guard = 'web'): ?array
     {
         $features = $this->features();
-        if (! $features['record_logins'] && ! $features['login_notifications']) {
+        if (! $features['record_logins'] && ! $features['new_device_notifications'] && ! $features['login_notifications']) {
             return null;
         }
-        try {
-            [$identity, $entry] = DB::transaction(function () use ($request, $actor, $guard, $features): array {
-                $identity = AuthenticationIdentity::firstOrCreate(['subject_key' => $this->subjectKey($actor, $guard)], [
-                    'guard' => $guard, 'email' => $this->email($actor), 'name' => $this->name($actor),
-                ]);
-                $identity->forceFill(['email' => $this->email($actor), 'name' => $this->name($actor)])->save();
-                $fingerprint = DeviceFingerprint::generate($request);
-                $device = AuthenticationDevice::firstOrCreate([
-                    'identity_id' => $identity->getKey(), 'fingerprint' => $fingerprint,
-                ], ['last_seen_at' => now()]);
-                $isNew = $device->wasRecentlyCreated;
-                $device->forceFill(['last_seen_at' => now()])->save();
-                $entry = new AuthenticationEntry([
-                    'ip_address' => $request->ip(),
-                    'user_agent' => mb_substr((string) $request->userAgent(), 0, 1024),
-                    'device_id' => $fingerprint,
-                    'device_name' => DeviceFingerprint::generateDeviceName($request),
-                    'login_at' => now(), 'last_activity_at' => now(), 'login_successful' => true,
-                    'location' => null, 'new_device' => $isNew,
-                    'notification_status' => ! $features['login_notifications'] ? 'disabled' : ($isNew ? 'unconfirmed' : 'familiar'),
-                ]);
-                $entry->authenticatable()->associate($identity);
-                if ($features['record_logins']) {
-                    $entry->save();
+        $context = LoginContext::from($request, $actor, $guard);
+        $identity = $entry = null;
+        if ($features['record_logins'] || $features['new_device_notifications']) {
+            try {
+                [$identity, $entry] = DB::transaction(function () use ($request, $actor, $guard, $features): array {
+                    $identity = AuthenticationIdentity::firstOrCreate(['subject_key' => $this->subjectKey($actor, $guard)], [
+                        'guard' => $guard, 'email' => $this->email($actor), 'name' => $this->name($actor),
+                    ]);
+                    $identity->forceFill(['email' => $this->email($actor), 'name' => $this->name($actor)])->save();
+                    $fingerprint = DeviceFingerprint::generate($request);
+                    $device = AuthenticationDevice::firstOrCreate([
+                        'identity_id' => $identity->getKey(), 'fingerprint' => $fingerprint,
+                    ], ['last_seen_at' => now()]);
+                    $isNew = $device->wasRecentlyCreated;
+                    $device->forceFill(['last_seen_at' => now()])->save();
+                    $entry = new AuthenticationEntry([
+                        'ip_address' => $request->ip(),
+                        'user_agent' => mb_substr((string) $request->userAgent(), 0, 1024),
+                        'device_id' => $fingerprint,
+                        'device_name' => DeviceFingerprint::generateDeviceName($request),
+                        'login_at' => now(), 'last_activity_at' => now(), 'login_successful' => true,
+                        'location' => null, 'new_device' => $isNew,
+                        'notification_status' => ! $features['new_device_notifications'] ? 'disabled' : ($isNew ? 'unconfirmed' : 'familiar'),
+                    ]);
+                    $entry->authenticatable()->associate($identity);
+                    if ($features['record_logins']) {
+                        $entry->save();
+                    }
+
+                    return [$identity, $entry];
+                });
+            } catch (Throwable $exception) {
+                if (config('wyxos-authentication.fail_closed', true)) {
+                    throw $exception;
                 }
 
-                return [$identity, $entry];
-            });
-        } catch (Throwable $exception) {
-            if (config('wyxos-authentication.fail_closed', true)) {
-                throw $exception;
+                if (! $features['login_notifications']) {
+                    return null;
+                }
             }
-
-            return null;
         }
-        if ($features['login_notifications'] && $entry->new_device) {
+        if ($features['new_device_notifications'] && $entry?->new_device) {
             $status = 'unavailable';
             if ($identity->email) {
                 try {
@@ -90,7 +97,14 @@ class AuthenticationMonitor
             }
         }
 
-        return $this->entry($entry, $identity);
+        $result = $entry !== null && $identity !== null ? $this->entry($entry, $identity) : [
+            'id' => '', 'account' => $context->actor->email ?? $context->actor->name ?? 'Account',
+            'occurred_at' => $context->occurredAt->toIso8601String(), 'ip_address' => $context->ipAddress,
+            'device' => $context->device, 'notification' => $features['new_device_notifications'] ? 'unavailable' : 'disabled', 'new_device' => false,
+        ];
+        $result['recipient_notifications'] = app(RecipientNotifier::class)->send($context, $features['login_notifications']);
+
+        return $result;
     }
 
     public function selfHistory(Authenticatable $actor, string $guard = 'web', int $page = 1): array
@@ -147,7 +161,12 @@ class AuthenticationMonitor
             throw new InvalidArgumentException('Authentication requires a stable actor identifier and a guard of 1–64 characters.');
         }
 
-        return hash('sha256', json_encode([get_class($actor), $guard, (string) $id], JSON_THROW_ON_ERROR));
+        $subject = [get_class($actor), $guard, (string) $id];
+        if ($actor instanceof Model) {
+            $subject[] = ['connection' => $actor->getConnectionName() ?? config('database.default'), 'table' => $actor->getTable()];
+        }
+
+        return hash('sha256', json_encode($subject, JSON_THROW_ON_ERROR));
     }
 
     private function email(Authenticatable $actor): ?string

@@ -1,0 +1,15 @@
+<?php
+
+namespace {{ namespace }};
+
+use Wyxos\LaravelAuthentication\LoginContext;
+
+class LoginNotificationRecipients
+{
+    public function recipients(LoginContext $context): array
+    {
+        // Return only application users or Notifiables allowed to receive this login notice.
+        // Resolve roles, tenant boundaries and preferences in this application.
+        return [];
+    }
+}

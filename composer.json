@@ -1,9 +1,9 @@
 {
   "name": "wyxos/laravel-authentication",
-  "description": "Switchable authentication history and new-device notifications for Laravel applications.",
+  "description": "Switchable authentication history, new-device alerts and selected-recipient login notifications for Laravel.",
   "type": "library",
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "require": {
     "php": "^8.2",
     "illuminate/auth": "^12.0|^13.0",

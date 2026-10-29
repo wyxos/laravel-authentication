@@ -133,7 +133,7 @@ class AuthenticationMonitorTest extends TestCase
 
     public function test_notification_switch_does_not_disable_history(): void
     {
-        config(['wyxos-authentication.features.login_notifications' => false]);
+        config(['wyxos-authentication.features.new_device_notifications' => false]);
         $this->assertSame('disabled', $this->monitor()->record($this->request(), $this->actor())['notification']);
         $this->assertSame(1, $this->monitor()->selfHistory($this->actor())['pagination']['total']);
         Notification::assertNothingSent();
@@ -232,5 +232,48 @@ class AuthenticationMonitorTest extends TestCase
         $this->assertSame(1, AuthenticationEntry::count());
         $this->assertSame(1, AuthenticationDevice::count());
         $this->assertSame(1, AuthenticationIdentity::count());
+    }
+
+    public function test_same_id_users_from_real_tenant_databases_and_tables_cannot_read_each_others_history(): void
+    {
+        foreach (['tenant-one', 'tenant-two'] as $connection) {
+            config(["database.connections.$connection" => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '']]);
+            foreach (['package_test_users', 'other_users'] as $table) {
+                Schema::connection($connection)->create($table, function (Blueprint $blueprint): void {
+                    $blueprint->id();
+                    $blueprint->string('email');
+                    $blueprint->string('name');
+                    $blueprint->timestamps();
+                });
+            }
+        }
+        $first = User::on('tenant-one')->create(['email' => '1@example.com', 'name' => 'Tenant one']);
+        $second = User::on('tenant-two')->create(['email' => '2@example.com', 'name' => 'Tenant two']);
+        $third = (new User(['email' => '3@example.com', 'name' => 'Other table']))->setConnection('tenant-one')->setTable('other_users');
+        $third->save();
+        $this->assertSame($first->getKey(), $second->getKey());
+        $this->assertSame($first->getKey(), $third->getKey());
+        foreach ([$first, $second, $third] as $actor) {
+            $this->monitor()->record($this->request(), $actor);
+        }
+        $this->monitor()->record($this->request(), $first, 'admin');
+
+        foreach ([$first, $second, $third] as $actor) {
+            $history = $this->monitor()->selfHistory($actor);
+            $this->assertSame(1, $history['pagination']['total']);
+            $this->assertSame([$actor->email], array_column($history['entries'], 'account'));
+        }
+        $admin = $this->monitor()->selfHistory($first, 'admin');
+        $this->assertSame(1, $admin['pagination']['total']);
+        $this->assertSame(['1@example.com'], array_column($admin['entries'], 'account'));
+        $this->assertSame(4, AuthenticationIdentity::count());
+    }
+
+    public function test_generic_user_identity_key_remains_compatible_with_previous_wyxos_history(): void
+    {
+        $this->monitor()->record($this->request(), $this->actor());
+        $expected = hash('sha256', json_encode([GenericUser::class, 'web', '1'], JSON_THROW_ON_ERROR));
+        $this->assertSame($expected, AuthenticationIdentity::first()->subject_key);
+        $this->assertSame(1, $this->monitor()->selfHistory($this->actor())['pagination']['total']);
     }
 }
