@@ -16,11 +16,39 @@
     "phpunit/phpunit": "^11.0|^12.0",
     "laravel/pint": "^1.0"
   },
-  "autoload": {"psr-4": {"Wyxos\\LaravelAuthentication\\": "src/"}},
-  "autoload-dev": {"psr-4": {"Wyxos\\LaravelAuthentication\\Tests\\": "tests/"}},
-  "extra": {"laravel": {"providers": ["Wyxos\\LaravelAuthentication\\AuthenticationServiceProvider"]}},
-  "scripts": {"test": "phpunit", "lint": "pint --test", "source:check": "@php tools/check-source.php"},
-  "config": {"sort-packages": true, "allow-plugins": {"php-http/discovery": true}},
+  "autoload": {
+    "psr-4": {
+      "Wyxos\\LaravelAuthentication\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Wyxos\\LaravelAuthentication\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Wyxos\\LaravelAuthentication\\AuthenticationServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "lint": "pint --test",
+    "source:check": "@php tools/check-source.php"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "homepage": "https://github.com/wyxos/laravel-authentication",
+  "support": {
+    "source": "https://github.com/wyxos/laravel-authentication",
+    "issues": "https://github.com/wyxos/laravel-authentication/issues"
+  }
 }

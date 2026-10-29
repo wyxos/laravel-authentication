@@ -12,7 +12,7 @@ php artisan wyxos-authentication:install
 php artisan migrate
 ```
 
-Before publication, use a Composer `path` repository pointing at the local package checkout. The package creates its own `wyxos_authentication_*` tables and leaves existing user and Rappasoft tables unchanged.
+Install the published package directly from Packagist; no custom Composer repository is required. The package creates its own `wyxos_authentication_*` tables and leaves existing user and Rappasoft tables unchanged.
 
 The installer creates `config/wyxos-authentication.php` and an editable `app/Security/LoginNotificationRecipients.php`. It follows the application's PHP namespace. Its default resolver returns an empty array and makes no role or super-admin assumptions. Repeat runs preserve existing files. `--force` explicitly replaces both files; keep application edits before using it. The installer does not run migrations or turn on selected-recipient notifications.
 

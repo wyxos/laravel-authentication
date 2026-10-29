@@ -1,0 +1,61 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            testbench: '^10.0'
+          - php: '8.4'
+            testbench: '^10.0'
+          - php: '8.3'
+            testbench: '^11.0'
+          - php: '8.4'
+            testbench: '^11.0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, mbstring, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+      - name: Install supported Laravel version
+        env:
+          TESTBENCH: ${{ matrix.testbench }}
+        run: composer require --dev "orchestra/testbench:$TESTBENCH" --with-all-dependencies --no-interaction --prefer-dist
+      - run: composer validate
+      - run: composer test
+      - run: composer lint
+      - run: composer source:check
+      - run: composer audit
+
+  update-packagist:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update verified package repository
+        env:
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer wyxos:$PACKAGIST_API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --user-agent 'Wyxos-package-release (mailto=wyxos@wyxos.com)' \
+            --data '{"repository":"https://github.com/wyxos/laravel-authentication"}' \
+            https://packagist.org/api/update-package
